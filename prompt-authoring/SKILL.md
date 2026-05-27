@@ -99,13 +99,37 @@ Example phrasing: "Return one structured response with these sections in order: 
 
 ### 8. `<action_safety>` block
 
-What the recipient is allowed to do. Always include this.
+What the recipient is allowed to do. Always include this. There are several distinct safety levels — pick the one that matches the task.
 
-- `READ-ONLY. Do not edit, stage, commit, or push. Do not run dotnet/npm/build/test commands.`
-- `Read-only investigation. Propose changes but do not write them.`
-- `Write-allowed within /path/X only. No changes outside this directory.`
+**Read-only on artifacts (default for diagnosis)**: don't edit, stage, commit, or push code, but running tests / builds / type-checkers / linters / search commands is fine if they help observe the system. Results inform analysis; no fixes.
 
-Models default toward action. Constrain explicitly.
+> `Read-only on the codebase. Don't edit, stage, commit, or push. You may run tests, builds, and read-only diagnostic commands if reproducing or observing helps the analysis. No fixes.`
+
+Use when: the recipient needs to reproduce a bug, verify a build state, or observe runtime behavior to diagnose. This is the right default for most flaky-test, build-failure, and "is this hypothesis right?" investigations.
+
+**Strict no-execution**: no edits, no commits, no command execution at all. Pure static analysis.
+
+> `READ-ONLY. Do not edit, stage, commit, or push. Do not run dotnet, npm, or any build/test commands. Static analysis only.`
+
+Use when: running commands has external side effects (production environment, shared infra, deploy hooks), or you're worried the recipient will cascade from "I ran the test, it failed" into "let me fix it" without permission.
+
+**Propose-only**: investigate freely and propose specific changes — diffs, file paths, exact edits — but don't write them. User reviews and applies.
+
+> `Investigate freely including running tests. Propose changes as exact diffs or before/after snippets. Do not write to disk.`
+
+Use when: you want the recipient's full analytical effort but want to control what actually lands.
+
+**Scoped write**: write-allowed within a specified path or scope; nothing outside.
+
+> `Write-allowed within /path/X only. No changes outside this directory. You may run tests and builds.`
+
+Use when: surgical fix where the blast radius is well-defined.
+
+**Full write**: standard implementation mode. Usually not what you want for a sparring-partner consult.
+
+> `Write changes as needed. Run tests to verify. Commit when complete.`
+
+The recurring failure mode this section prevents: models default toward action. Without explicit safety scope, a "read-only investigation" can quietly turn into committed fixes, and a strict static analysis can get derailed by the model deciding to run tests "to verify". Be specific.
 
 ## When to use each mode header
 
