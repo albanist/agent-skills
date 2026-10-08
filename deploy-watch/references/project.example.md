@@ -13,10 +13,12 @@
 
 Usually watched: **live**. Dev receives every merge to `main` automatically.
 
-## Health paths
+## Key pages
 
-`/`, `/events/`, `/contact/` — public pages that must return 200. Pick pages that render real
-content (navigation, a listing), not a static file, so a broken content cache shows up.
+`/` is always watched. These are added when a deploy is riskier (package upgrades, migrations,
+shared layout, navigation or search): `/events/` (listing, content queries), `/search/?q=jazz`
+(uses the search index). Pick pages that render real content, not a static file, so a broken
+content cache shows up.
 
 ## Schema folder
 

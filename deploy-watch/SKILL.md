@@ -70,12 +70,14 @@ The CLI owns the phase machine. Run it in the background and relay its transitio
 ```bash
 umbraco deploy watch --profile <env> --json --heartbeat 1m --logs \
   --uda-dir <exported schema folder> \
-  --health-path / --health-path <more paths from references/project.md>
+  --health-path / [--health-path <page> ...]
 ```
 
 Emits NDJSON, one `type` per line. Phases: `baseline → restarting → app-alive → serving → landed → settling → verified | failed | timeout`. Exit 0 verified, 5 failed, 6 unknown, 7 verified but schema artifacts still drifted or missing after Deploy's schema pass (Deploy can skip artifacts without failing the pass). It baselines everything before arming, checks Examine index health, and requires the environment to stay healthy for a full `--settle` window (default 90 s) before `verified`, because a single passing sample is not verification.
 
 **`--logs` puts the log stream in the same output.** The phases answer "did it land and is it healthy"; the diagnosis comes from the logs, and you cannot investigate afterwards what you never watched. `log` lines cover restarts, migrations, indexer suspend/resume/rebuild, Deploy entries and errors; `log-monitor` lines report the log viewer being unavailable during the restart, gaps, and the final count. Known chronic noise is excluded by the CLI; add your own with `--logs-exclude` (list it in `references/project.md`). Log lines never change phases or the exit code, and the stream stops with the watch.
+
+**Health paths: `/` always, more only when the deploy earns it.** Add every page a tripwire points at, so the pages this deploy changes are watched throughout rather than checked once, and a few key pages (listed in `references/project.md`) when the deploy carries package upgrades or migrations, or touches shared layout, navigation or search. Say which pages and why when arming.
 
 **`--uda-dir` checks the schema tripwires.** It tracks the artifacts that are drifted or missing at baseline and holds `verified` until each is in sync, or until Deploy's schema pass has ended and been re-checked. A schema artifact still at baseline before the pass ends is expected, not a finding.
 
@@ -84,7 +86,7 @@ Relay every line as it arrives, heartbeats included: phases and logs go to stdou
 On arming, tell the user what is watched and what each signal means. Replacing the watch: arm the new one BEFORE stopping the old, never the reverse.
 
 ### 5. Verify on landing
-Full post-deploy verification: every tripwire confirmed (schema ones from the `schema-summary` line), symptom-level checks for each shipped feature (what does the visitor or editor see?), and site health across the project's health paths. Add the two the CLI answers directly: `umbraco indexer list --profile <env>` (any index at `docs=0` / Rebuilding means search is empty for visitors, whatever the deploy says) and `umbraco health run <group> --profile <env>` for the groups listed in `references/project.md`. Report a green/red table. Anything red → failure playbook.
+Full post-deploy verification: every tripwire confirmed (schema ones from the `schema-summary` line), symptom-level checks for each shipped feature (what does the visitor or editor see?), and site health across the health paths chosen at arming. Add the two the CLI answers directly: `umbraco indexer list --profile <env>` (any index at `docs=0` / Rebuilding means search is empty for visitors, whatever the deploy says) and `umbraco health run <group> --profile <env>` for the groups listed in `references/project.md`. Report a green/red table. Anything red → failure playbook.
 
 ### 6. Failure playbook
 - Schema pass failed → check the known failure classes first (`references/landmines.md`, `references/project.md`), then the logs. Fallback: a GUID-parity direct apply via the environment's CLI profile (`references/tripwires.md` § Converge), with the user's go per the hard rules.
@@ -96,4 +98,4 @@ Reflect at every terminal state. A new failure signature, a wasted step or a mis
 
 ## Reporting
 
-The user must be able to see the status at any moment without asking. Tell them the scope list (step 1 shape), then at baseline, at "armed, waiting for you to deploy", at every phase transition, and at the terminal state, with real timestamps. While the deploy runs, pass on each heartbeat as a one-line status ("still watching — restarting, 4 min in"). If nothing at all has arrived for two minutes, neither a phase nor a heartbeat, say so plainly and check the watch process and its files: silence is either a stalled watch or a broken relay, and the user must hear which. Terminal states are reported loudly.
+The user must be able to see the status at any moment without asking. Tell them the scope list (step 1 shape), then at baseline, at "armed, waiting for you to deploy", at every phase transition, and at the terminal state, with real timestamps. While the deploy runs, pass on each heartbeat as a one-line status ("still watching — restarting, 4 min in"); before the restart, say what is happening ("waiting for the restart — Cloud builds first"). Report `landed` the moment it arrives, as the headline it is: "the new version is live (the Cloud portal should show the deploy as done about now); checking that pages, indexes and logs stay healthy for the settle window before calling it verified". The portal's green means Cloud finished; `verified` also means the site works, so it comes later on purpose, and the user should know why. If nothing at all has arrived for two minutes, neither a phase nor a heartbeat, say so plainly and check the watch process and its files: silence is either a stalled watch or a broken relay, and the user must hear which. Terminal states are reported loudly.
