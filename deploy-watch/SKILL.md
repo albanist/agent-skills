@@ -79,7 +79,7 @@ Emits NDJSON, one `type` per line. Phases: `baseline → restarting → app-aliv
 
 **`--uda-dir` checks the schema tripwires.** It tracks the artifacts that are drifted or missing at baseline and holds `verified` until each is in sync, or until Deploy's schema pass has ended and been re-checked. A schema artifact still at baseline before the pass ends is expected, not a finding.
 
-Relay every line except heartbeats as it arrives (`phase`, `log`, `log-monitor`, `schema`, `schema-pass`, `schema-summary`). Write the NDJSON to a file and follow that file with your agent's monitor/streaming facility: a plain background command only surfaces its exit, and the user then sees the deploy finish before you have reported a single phase.
+Relay every line as it arrives, heartbeats included: phases and logs go to stdout as NDJSON (`phase`, `log`, `log-monitor`, `schema`, `schema-pass`, `schema-summary`), the `--heartbeat` "still watching" lines go to stderr. Write both to files and follow them with your agent's monitor/streaming facility (a plain background command only surfaces its exit). Every stage of that pipeline must pass each line on immediately: no `cut`, `head`, `sort` or plain `awk`, which buffer and leave the relay silent while the deploy runs. Heartbeats are the sign of life; never filter them out.
 
 On arming, tell the user what is watched and what each signal means. Replacing the watch: arm the new one BEFORE stopping the old, never the reverse.
 
@@ -96,4 +96,4 @@ Reflect at every terminal state. A new failure signature, a wasted step or a mis
 
 ## Reporting
 
-Tell the user the scope list (step 1 shape), then at baseline, at "armed, waiting for you to deploy", at every phase transition, and at the terminal state, with real timestamps. Terminal states are reported loudly. Without this the user cannot tell a live watch from a dead one and has to ask.
+The user must be able to see the status at any moment without asking. Tell them the scope list (step 1 shape), then at baseline, at "armed, waiting for you to deploy", at every phase transition, and at the terminal state, with real timestamps. While the deploy runs, pass on each heartbeat as a one-line status ("still watching — restarting, 4 min in"). If nothing at all has arrived for two minutes, neither a phase nor a heartbeat, say so plainly and check the watch process and its files: silence is either a stalled watch or a broken relay, and the user must hear which. Terminal states are reported loudly.
