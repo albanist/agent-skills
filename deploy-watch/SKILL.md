@@ -81,7 +81,7 @@ Emits NDJSON, one `type` per line. Phases: `baseline → restarting → app-aliv
 
 **`--uda-dir` checks the schema tripwires.** It tracks the artifacts that are drifted or missing at baseline and holds `verified` until each is in sync, or until Deploy's schema pass has ended and been re-checked. A schema artifact still at baseline before the pass ends is expected, not a finding.
 
-**Relay both streams, line by line, heartbeats included.** Phases and logs go to stdout as NDJSON; the `--heartbeat` "still watching — phase …" lines go to stderr. Write each to a file and follow both with your agent's monitor, e.g. `tail -F watch.ndjson watch.err | grep --line-buffered -v '^$'`. Every stage of the pipeline must pass each line on immediately: no `cut`, `head`, `sort` or plain `awk` (they buffer, and the relay goes silent while the deploy runs). Heartbeats are the sign of life; never filter them out.
+**Relay both streams, line by line, heartbeats included.** Phases and logs go to stdout as NDJSON; the `--heartbeat` "still watching — phase …" lines go to stderr. Write each to a file and follow both with a tool that streams new lines to you as they arrive, e.g. `tail -F watch.ndjson watch.err | grep --line-buffered -v '^$'`. Every stage of the pipeline must pass each line on immediately: no `cut`, `head`, `sort` or plain `awk` (they buffer, and the relay goes silent while the deploy runs). Heartbeats are the sign of life; never filter them out.
 
 On arming, tell the user what is watched and what each signal means. Replacing the watch: arm the new one BEFORE stopping the old, never the reverse.
 

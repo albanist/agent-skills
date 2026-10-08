@@ -33,7 +33,7 @@ git archive origin/main src/AcmeEvents.Web/umbraco/Deploy/Revision | tar -x -C /
 ## Bookmark
 
 Tag prefix `deploy/live/`, e.g. `deploy/live/2026-03-12-0915`. `scripts/deploy-scope.py` treats
-these paths as repo-only (no site effect): `.github/`, `.claude/`, `docs/`, `tests/`, `*.md`.
+these paths as repo-only (no site effect): `.github/`, `.agents/`, `docs/`, `tests/`, `*.md`.
 
 ## Health check groups to run after landing
 
